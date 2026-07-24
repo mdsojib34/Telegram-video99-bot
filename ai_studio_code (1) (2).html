@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Video Unlock Mini App</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS VARIABLES & RESET */
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: 80px; /* Space for Bottom Nav */
+        }
+
+        /* UTILITIES */
+        .hidden { display: none !important; }
+        .p-20 { padding: 20px; }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 20px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid white;
+            background: #ccc;
+        }
+
+        /* BOTTOM NAVIGATION */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 12px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* VIDEO CARDS */
+        .video-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .video-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+
+        .video-card:active { transform: scale(0.98); }
+
+        .thumbnail-box {
+            width: 100%;
+            height: 180px;
+            background: #334155;
+            position: relative;
+        }
+
+        .thumbnail-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .lock-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .video-info { padding: 15px; }
+        .video-title { font-weight: 600; font-size: 16px; margin-bottom: 5px; }
+        .video-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 15px; }
+
+        .progress-container {
+            height: 8px;
+            background: #0f172a;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+
+        .btn-unlock { background: var(--primary); color: white; }
+        .btn-play { background: var(--success); color: white; }
+        .btn-admin { background: var(--secondary); color: white; margin-top: 10px; }
+
+        .fav-icon {
+            position: absolute;
+            top: 10px; right: 10px;
+            font-size: 24px;
+            color: white;
+            z-index: 10;
+        }
+
+        /* AD MODAL & PLAYER */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .modal.active { display: flex; }
+
+        .ad-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .player-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+        }
+
+        video { width: 100%; max-height: 80vh; }
+
+        .ad-timer {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* ADMIN PANEL */
+        .admin-section { padding: 20px; }
+        .admin-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+        }
+
+        /* PROFILE */
+        .profile-card {
+            background: var(--card-bg);
+            margin: 20px;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .stat-box {
+            background: #334155;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="appHeader">
+        <div class="user-info">
+            <img src="" alt="Avatar" class="user-avatar" id="userAvatar">
+            <div>
+                <div id="userName" style="font-weight: 600;">Guest User</div>
+                <div id="userTgId" style="font-size: 12px; opacity: 0.8;">ID: 00000000</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Views -->
+    <main id="mainContent">
+        <!-- Home / All Videos -->
+        <section id="view-home">
+            <div class="video-grid" id="videoList">
+                <!-- Videos injected by JS -->
+            </div>
+        </section>
+
+        <!-- Favorite Videos -->
+        <section id="view-fav" class="hidden">
+            <h2 class="p-20">পছন্দ</h2>
+            <div class="video-grid" id="favList"></div>
+        </section>
+
+        <!-- Unlocked Videos -->
+        <section id="view-unlocked" class="hidden">
+            <div class="p-20">
+                <h2>আনলক করা ভিডিও</h2>
+                <p id="totalUnlockedText" style="color: var(--text-dim); font-size: 14px;">মোট আনলক: 0</p>
+            </div>
+            <div class="video-grid" id="unlockedList"></div>
+        </section>
+
+        <!-- Profile -->
+        <section id="view-profile" class="hidden">
+            <div class="profile-card">
+                <img src="" alt="Avatar" class="user-avatar" id="profileAvatar" style="width: 80px; height: 80px; margin-bottom: 10px;">
+                <h3 id="profileName">Guest</h3>
+                <p id="profileId" style="color: var(--text-dim);">ID: 0</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div id="statTotalVideos">0</div>
+                        <div style="font-size: 12px; color: var(--text-dim);">মোট ভিডিও</div>
+                    </div>
+                    <div class="stat-box">
+                        <div id="statUnlockedVideos">0</div>
+                        <div style="font-size: 12px; color: var(--text-dim);">আনলক হয়েছে</div>
+                    </div>
+                </div>
+
+                <div id="adminEntryBtn" class="hidden">
+                    <button class="btn btn-admin" onclick="showAdminPanel()">Admin Panel Access</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Panel -->
+        <section id="view-admin" class="hidden">
+            <div class="admin-section">
+                <h2>Admin Dashboard</h2>
+                <div class="admin-card">
+                    <h3>ভিডিও যোগ করুন</h3>
+                    <input type="text" id="admVideoTitle" placeholder="Video Title">
+                    <textarea id="admVideoDesc" placeholder="Short Description"></textarea>
+                    <input type="text" id="admVideoThumb" placeholder="Thumbnail Image URL">
+                    <input type="text" id="admVideoUrl" placeholder="Video File URL">
+                    <input type="number" id="admRequiredAds" placeholder="Required Ads to Unlock" value="1">
+                    <button class="btn btn-unlock" onclick="addNewVideo()">Save Video</button>
+                </div>
+
+                <h3>ম্যানেজ ভিডিও</h3>
+                <div id="adminVideoList"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Ad / Video Player Modal -->
+    <div class="modal" id="playerModal">
+        <div class="ad-header">
+            <h3 id="modalTitle">বিজ্ঞাপন চলছে...</h3>
+            <p id="modalSubTitle">সম্পূর্ণ না দেখলে আনলক হবে না</p>
+        </div>
+        <div class="player-container">
+            <video id="mainVideoPlayer" controlslist="nodownload" playsinline></video>
+        </div>
+        <div class="ad-timer" id="adTimerBox">
+            সময় বাকি: <span id="timerSeconds">0</span> সেকেন্ড
+        </div>
+        <div class="p-20" id="closePlayerBox">
+            <button class="btn btn-danger" onclick="closePlayer()">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home', this)">
+            <i>🏠</i>
+            <span>সব</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('fav', this)">
+            <i>❤️</i>
+            <span>পছন্দ</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('unlocked', this)">
+            <i>🔓</i>
+            <span>আনলক</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('profile', this)">
+            <i>👤</i>
+            <span>প্রোফাইল</span>
+        </div>
+    </nav>
+
+    <script>
+        // APP CONFIG & INITIAL DATA
+        const ADMIN_ID = 6994836801;
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Database Simulation (LocalStorage)
+        let videos = JSON.parse(localStorage.getItem('rabbit_videos')) || [
+            {
+                id: 1,
+                title: "Talking Rabbit Fun",
+                desc: "Cute rabbit talking and dancing.",
+                thumb: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=500",
+                url: "https://www.w3schools.com/html/mov_bbb.mp4",
+                requiredAds: 1,
+                isActive: true
+            },
+            {
+                id: 2,
+                title: "Forest Adventure",
+                desc: "Rabbit exploring the green forest.",
+                thumb: "https://images.unsplash.com/photo-1591010156277-248554b5dfa4?w=500",
+                url: "https://www.w3schools.com/html/movie.mp4",
+                requiredAds: 3,
+                isActive: true
+            }
+        ];
+
+        let ads = [
+            { url: "https://www.w3schools.com/html/mov_bbb.mp4", duration: 10 }
+        ];
+
+        let userData = JSON.parse(localStorage.getItem('rabbit_user_progress')) || {
+            unlocked: {}, // format: {videoId: watchedCount}
+            favorites: []
+        };
+
+        // UI STATE
+        let currentUser = {
+            id: tg.initDataUnsafe?.user?.id || 12345678,
+            name: tg.initDataUnsafe?.user?.first_name || "Guest User",
+            photo: tg.initDataUnsafe?.user?.photo_url || "https://ui-avatars.com/api/?name=Guest"
+        };
+
+        // INITIALIZE APP
+        function init() {
+            // Update UI with User Info
+            document.getElementById('userName').innerText = currentUser.name;
+            document.getElementById('userTgId').innerText = "ID: " + currentUser.id;
+            document.getElementById('userAvatar').src = currentUser.photo;
+            document.getElementById('profileAvatar').src = currentUser.photo;
+            document.getElementById('profileName').innerText = currentUser.name;
+            document.getElementById('profileId').innerText = "ID: " + currentUser.id;
+
+            // Check Admin
+            if (currentUser.id == ADMIN_ID) {
+                document.getElementById('adminEntryBtn').classList.remove('hidden');
+            }
+
+            renderVideos();
+            updateStats();
+        }
+
+        // RENDER FUNCTIONS
+        function renderVideos() {
+            const list = document.getElementById('videoList');
+            const favList = document.getElementById('favList');
+            const unlockedList = document.getElementById('unlockedList');
+            const adminList = document.getElementById('adminVideoList');
+            
+            list.innerHTML = "";
+            favList.innerHTML = "";
+            unlockedList.innerHTML = "";
+            adminList.innerHTML = "";
+
+            let unlockedCount = 0;
+
+            videos.forEach(video => {
+                const watched = userData.unlocked[video.id] || 0;
+                const isUnlocked = watched >= video.requiredAds;
+                const isFav = userData.favorites.includes(video.id);
+                const progress = (watched / video.requiredAds) * 100;
+
+                const cardHtml = `
+                    <div class="video-card">
+                        <div class="fav-icon" onclick="toggleFavorite(${video.id})">${isFav ? '❤️' : '🤍'}</div>
+                        <div class="thumbnail-box">
+                            <img src="${video.thumb}" alt="thumb">
+                            ${!isUnlocked ? `
+                                <div class="lock-overlay">
+                                    <span style="font-size: 30px;">🔒</span>
+                                    <p style="font-size: 12px; margin-top: 5px;">Locked</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-desc">${video.desc}</div>
+                            
+                            ${!isUnlocked ? `
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
+                                    <span>Progress: ${watched}/${video.requiredAds}</span>
+                                    <span>${Math.round(progress)}%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: ${progress}%"></div>
+                                </div>
+                                <button class="btn btn-unlock" onclick="watchAd(${video.id})">📺 বিজ্ঞাপন দেখুন</button>
+                            ` : `
+                                <div style="color: var(--success); font-size: 12px; margin-bottom: 10px;">✅ আনলক হয়েছে</div>
+                                <button class="btn btn-play" onclick="playVideo(${video.id})">▶️ ভিডিও দেখুন</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+
+                list.innerHTML += cardHtml;
+                if(isFav) favList.innerHTML += cardHtml;
+                if(isUnlocked) {
+                    unlockedList.innerHTML += cardHtml;
+                    unlockedCount++;
+                }
+
+                // For Admin Panel
+                adminList.innerHTML += `
+                    <div class="admin-card" style="display:flex; justify-content: space-between; align-items: center;">
+                        <div>${video.title} (Ads: ${video.requiredAds})</div>
+                        <button class="btn btn-danger" style="width: auto; padding: 5px 10px;" onclick="deleteVideo(${video.id})">Delete</button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('totalUnlockedText').innerText = "মোট আনলক: " + unlockedCount;
+            document.getElementById('statTotalVideos').innerText = videos.length;
+            document.getElementById('statUnlockedVideos').innerText = unlockedCount;
+        }
+
+        // NAVIGATION LOGIC
+        function switchTab(viewId, el) {
+            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Header hide logic for profile/admin
+            if(viewId === 'profile' || viewId === 'admin') {
+                document.getElementById('appHeader').classList.add('hidden');
+            } else {
+                document.getElementById('appHeader').classList.remove('hidden');
+            }
+        }
+
+        function showAdminPanel() {
+            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('view-admin').classList.remove('hidden');
+        }
+
+        // CORE AD & VIDEO LOGIC
+        let adInterval;
+        function watchAd(videoId) {
+            const modal = document.getElementById('playerModal');
+            const player = document.getElementById('mainVideoPlayer');
+            const timerBox = document.getElementById('adTimerBox');
+            const closeBtnBox = document.getElementById('closePlayerBox');
+            
+            modal.classList.add('active');
+            timerBox.classList.remove('hidden');
+            closeBtnBox.classList.add('hidden');
+            
+            document.getElementById('modalTitle').innerText = "বিজ্ঞাপন চলছে...";
+            
+            // Pick random ad
+            const randomAd = ads[0]; // For demo
+            player.src = randomAd.url;
+            player.play();
+
+            let timeLeft = randomAd.duration;
+            document.getElementById('timerSeconds').innerText = timeLeft;
+
+            adInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerSeconds').innerText = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(adInterval);
+                    finishAd(videoId);
+                }
+            }, 1000);
+
+            // If user pauses or skips, timer stops (Simple prevention)
+            player.onpause = () => {
+                if(timeLeft > 0) {
+                    alert("বিজ্ঞাপন সম্পূর্ণ দেখুন!");
+                    player.play();
+                }
+            };
+        }
+
+        function finishAd(videoId) {
+            clearInterval(adInterval);
+            const player = document.getElementById('mainVideoPlayer');
+            player.pause();
+
+            // Update Progress
+            if(!userData.unlocked[videoId]) userData.unlocked[videoId] = 0;
+            userData.unlocked[videoId] += 1;
+            saveData();
+
+            // Check if fully unlocked
+            const video = videos.find(v => v.id == videoId);
+            if(userData.unlocked[videoId] >= video.requiredAds) {
+                tg.HapticFeedback.notificationOccurred('success');
+                alert("🎉 অভিনন্দন! ভিডিওটি আনলক হয়েছে।");
+            } else {
+                alert("বিজ্ঞাপন দেখা সফল! আরও " + (video.requiredAds - userData.unlocked[videoId]) + " টি দেখুন।");
+            }
+
+            closePlayer();
+            renderVideos();
+        }
+
+        function playVideo(videoId) {
+            const video = videos.find(v => v.id == videoId);
+            const modal = document.getElementById('playerModal');
+            const player = document.getElementById('mainVideoPlayer');
+            
+            document.getElementById('modalTitle').innerText = video.title;
+            document.getElementById('adTimerBox').classList.add('hidden');
+            document.getElementById('closePlayerBox').classList.remove('hidden');
+            
+            modal.classList.add('active');
+            player.src = video.url;
+            player.controls = true;
+            player.play();
+        }
+
+        function closePlayer() {
+            const player = document.getElementById('mainVideoPlayer');
+            player.pause();
+            player.src = "";
+            document.getElementById('playerModal').classList.remove('active');
+            clearInterval(adInterval);
+        }
+
+        // FAVORITE LOGIC
+        function toggleFavorite(id) {
+            const index = userData.favorites.indexOf(id);
+            if(index > -1) {
+                userData.favorites.splice(index, 1);
+            } else {
+                userData.favorites.push(id);
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            saveData();
+            renderVideos();
+        }
+
+        // ADMIN FUNCTIONS
+        function addNewVideo() {
+            const title = document.getElementById('admVideoTitle').value;
+            const desc = document.getElementById('admVideoDesc').value;
+            const thumb = document.getElementById('admVideoThumb').value;
+            const url = document.getElementById('admVideoUrl').value;
+            const req = parseInt(document.getElementById('admRequiredAds').value);
+
+            if(!title || !url) return alert("Title and URL required");
+
+            const newVid = {
+                id: Date.now(),
+                title, desc, thumb, url,
+                requiredAds: req,
+                isActive: true
+            };
+
+            videos.push(newVid);
+            saveData();
+            renderVideos();
+            alert("Video Added Successfully!");
+        }
+
+        function deleteVideo(id) {
+            if(confirm("Are you sure?")) {
+                videos = videos.filter(v => v.id != id);
+                saveData();
+                renderVideos();
+            }
+        }
+
+        // DATA PERSISTENCE
+        function saveData() {
+            localStorage.setItem('rabbit_videos', JSON.stringify(videos));
+            localStorage.setItem('rabbit_user_progress', JSON.stringify(userData));
+        }
+
+        function updateStats() {
+            // Updated via renderVideos
+        }
+
+        // RUN APP
+        init();
+
+    </script>
+</body>
+</html>
