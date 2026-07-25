@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Video Unlock Mini App</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root{
+    --bg:#070b14;
+    --surface:#101827;
+    --surface-2:#151f31;
+    --border:rgba(255,255,255,.08);
+    --text:#f8fafc;
+    --muted:#8c98aa;
+    --primary:#6d5dfc;
+    --primary-2:#8b5cf6;
+    --success:#20c997;
+    --danger:#ff5d73;
+    --warning:#ffb020;
+    --shadow:0 16px 40px rgba(0,0,0,.28);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    min-height:100vh;
+    background:
+        radial-gradient(circle at 10% 0%,rgba(109,93,252,.16),transparent 30%),
+        radial-gradient(circle at 100% 10%,rgba(139,92,246,.12),transparent 28%),
+        var(--bg);
+    color:var(--text);
+    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    padding-bottom:90px;
+}
+
+button,
+input,
+textarea{
+    font:inherit;
+}
+
+button{
+    border:0;
+    cursor:pointer;
+}
+
+.hidden{
+    display:none!important;
+}
+
+/* ================= HEADER ================= */
+
+.app-header{
+    padding:18px 16px 22px;
+    background:linear-gradient(135deg,#171c3b,#17152f);
+    border-bottom:1px solid var(--border);
+    border-radius:0 0 26px 26px;
+    box-shadow:var(--shadow);
+}
+
+.header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.user-box{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.avatar{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    object-fit:cover;
+    background:#222c3c;
+    border:2px solid rgba(255,255,255,.15);
+}
+
+.user-name{
+    font-size:16px;
+    font-weight:700;
+}
+
+.user-id{
+    color:var(--muted);
+    font-size:11px;
+    margin-top:3px;
+}
+
+.header-icon{
+    width:42px;
+    height:42px;
+    border-radius:14px;
+    background:rgba(255,255,255,.07);
+    color:white;
+    font-size:19px;
+}
+
+/* ================= MAIN ================= */
+
+.page{
+    padding:18px 15px;
+}
+
+.section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.section-title{
+    font-size:19px;
+    font-weight:800;
+}
+
+.section-subtitle{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:3px;
+}
+
+.badge{
+    padding:6px 10px;
+    border-radius:20px;
+    background:rgba(109,93,252,.13);
+    color:#a99eff;
+    font-size:11px;
+    font-weight:700;
+}
+
+/* ================= VIDEO CARD ================= */
+
+.video-list{
+    display:grid;
+    gap:16px;
+}
+
+.video-card{
+    overflow:hidden;
+    background:linear-gradient(145deg,#111b2b,#0d1523);
+    border:1px solid var(--border);
+    border-radius:20px;
+    box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+
+.thumb{
+    height:205px;
+    position:relative;
+    background:#1b2535;
+    overflow:hidden;
+}
+
+.thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+
+.thumb::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top,rgba(0,0,0,.7),transparent 55%);
+}
+
+.locked-layer{
+    position:absolute;
+    inset:0;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    background:rgba(4,7,13,.58);
+    backdrop-filter:blur(5px);
+}
+
+.lock-icon{
+    width:55px;
+    height:55px;
+    border-radius:18px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:rgba(255,255,255,.12);
+    font-size:25px;
+    margin-bottom:8px;
+}
+
+.locked-text{
+    font-weight:700;
+    font-size:14px;
+}
+
+.favorite{
+    position:absolute;
+    top:12px;
+    right:12px;
+    z-index:5;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:rgba(0,0,0,.45);
+    color:white;
+    font-size:18px;
+}
+
+.video-content{
+    padding:15px;
+}
+
+.video-title{
+    font-size:16px;
+    font-weight:800;
+    margin-bottom:5px;
+}
+
+.video-desc{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.6;
+    margin-bottom:13px;
+}
+
+.progress-info{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:7px;
+}
+
+.progress{
+    height:7px;
+    background:#202b3c;
+    border-radius:20px;
+    overflow:hidden;
+    margin-bottom:12px;
+}
+
+.progress-bar{
+    height:100%;
+    background:linear-gradient(90deg,var(--primary),var(--primary-2));
+    border-radius:20px;
+    transition:.4s;
+}
+
+.btn{
+    width:100%;
+    padding:12px 15px;
+    border-radius:13px;
+    color:white;
+    font-weight:800;
+    font-size:13px;
+    transition:.2s;
+}
+
+.btn:active{
+    transform:scale(.97);
+}
+
+.btn-primary{
+    background:linear-gradient(135deg,var(--primary),var(--primary-2));
+    box-shadow:0 8px 20px rgba(109,93,252,.2);
+}
+
+.btn-success{
+    background:linear-gradient(135deg,#15b87a,#20c997);
+}
+
+.btn-danger{
+    background:var(--danger);
+}
+
+.btn-secondary{
+    background:#273348;
+}
+
+.status{
+    font-size:12px;
+    color:var(--success);
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+/* ================= EMPTY ================= */
+
+.empty{
+    padding:45px 20px;
+    text-align:center;
+    color:var(--muted);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+}
+
+.empty-icon{
+    font-size:40px;
+    margin-bottom:10px;
+}
+
+/* ================= PROFILE ================= */
+
+.profile-card{
+    background:linear-gradient(145deg,#111b2b,#0e1624);
+    border:1px solid var(--border);
+    border-radius:24px;
+    padding:25px 18px;
+    text-align:center;
+    box-shadow:var(--shadow);
+}
+
+.profile-avatar{
+    width:82px;
+    height:82px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid var(--primary);
+    margin-bottom:10px;
+}
+
+.profile-name{
+    font-size:19px;
+    font-weight:800;
+}
+
+.profile-id{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:4px;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:22px;
+}
+
+.stat{
+    padding:16px 10px;
+    background:#172236;
+    border-radius:16px;
+    border:1px solid var(--border);
+}
+
+.stat strong{
+    display:block;
+    font-size:22px;
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:11px;
+}
+
+/* ================= ADMIN ================= */
+
+.admin-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:17px;
+    margin-bottom:16px;
+}
+
+.admin-card h3{
+    margin-bottom:14px;
+    font-size:16px;
+}
+
+.input{
+    width:100%;
+    padding:13px;
+    margin-bottom:10px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#0a111e;
+    color:white;
+    outline:none;
+}
+
+.input:focus{
+    border-color:var(--primary);
+}
+
+.admin-video{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    margin-bottom:9px;
+    background:#172236;
+    border-radius:13px;
+}
+
+.admin-video-title{
+    font-size:13px;
+    font-weight:700;
+}
+
+.admin-video-meta{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:3px;
+}
+
+.delete-btn{
+    flex-shrink:0;
+    background:rgba(255,93,115,.12);
+    color:#ff7c8d;
+    padding:8px 11px;
+    border-radius:9px;
+    font-size:11px;
+    font-weight:700;
+}
+
+/* ================= BOTTOM NAV ================= */
+
+.bottom-nav{
+    position:fixed;
+    z-index:1000;
+    left:10px;
+    right:10px;
+    bottom:10px;
+    height:68px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    background:rgba(17,24,39,.92);
+    backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:21px;
+    box-shadow:0 15px 40px rgba(0,0,0,.4);
+}
+
+.nav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    color:#748197;
+    font-size:10px;
+    font-weight:700;
+}
+
+.nav-icon{
+    font-size:20px;
+}
+
+.nav-item.active{
+    color:#9d91ff;
+}
+
+/* ================= MODAL ================= */
+
+.modal{
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    display:none;
+    flex-direction:column;
+    background:#05080e;
+}
+
+.modal.active{
+    display:flex;
+}
+
+.modal-head{
+    padding:16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid var(--border);
+}
+
+.modal-title{
+    font-size:15px;
+    font-weight:800;
+}
+
+.close-modal{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    background:#172236;
+    color:white;
+    font-size:18px;
+}
+
+.player{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#000;
+}
+
+.player video{
+    width:100%;
+    max-height:75vh;
+}
+
+.modal-bottom{
+    padding:18px 15px;
+    background:#0c1320;
+}
+
+.timer{
+    text-align:center;
+    margin-bottom:12px;
+}
+
+.timer strong{
+    color:#a99eff;
+    font-size:22px;
+}
+
+.timer-text{
+    color:var(--muted);
+    font-size:11px;
+}
+
+/* ================= TOAST ================= */
+
+.toast{
+    position:fixed;
+    z-index:5000;
+    left:50%;
+    bottom:95px;
+    transform:translate(-50%,20px);
+    width:calc(100% - 40px);
+    max-width:380px;
+    padding:13px 15px;
+    background:#182236;
+    border:1px solid var(--border);
+    border-radius:13px;
+    text-align:center;
+    font-size:12px;
+    opacity:0;
+    pointer-events:none;
+    transition:.3s;
+}
+
+.toast.show{
+    opacity:1;
+    transform:translate(-50%,0);
+}
+
+/* ================= DESKTOP ================= */
+
+@media(min-width:700px){
+    body{
+        max-width:560px;
+        margin:auto;
+    }
+
+    .video-list{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .thumb{
+        height:160px;
+    }
+
+    .bottom-nav{
+        max-width:540px;
+        left:50%;
+        right:auto;
+        width:calc(100% - 20px);
+        transform:translateX(-50%);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="app-header" id="appHeader">
+    <div class="header-top">
+        <div class="user-box">
+            <img id="userAvatar" class="avatar" src="" alt="User">
+            <div>
+                <div id="userName" class="user-name">Guest User</div>
+                <div id="userId" class="user-id">ID: 00000000</div>
+            </div>
+        </div>
+
+        <button class="header-icon" onclick="openProfile()">👤</button>
+    </div>
+</header>
+
+
+<!-- MAIN -->
+<main>
+
+<!-- HOME -->
+<section id="view-home" class="page">
+    <div class="section-head">
+        <div>
+            <div class="section-title">ভিডিও লাইব্রেরি</div>
+            <div class="section-subtitle">বিজ্ঞাপন দেখে আপনার পছন্দের ভিডিও আনলক করুন</div>
+        </div>
+        <div class="badge" id="videoCountBadge">0 ভিডিও</div>
+    </div>
+
+    <div id="videoList" class="video-list"></div>
+</section>
+
+
+<!-- FAVORITES -->
+<section id="view-fav" class="page hidden">
+    <div class="section-head">
+        <div>
+            <div class="section-title">আমার পছন্দ</div>
+            <div class="section-subtitle">আপনার পছন্দের ভিডিওগুলো এখানে</div>
+        </div>
+    </div>
+
+    <div id="favList" class="video-list"></div>
+</section>
+
+
+<!-- UNLOCKED -->
+<section id="view-unlocked" class="page hidden">
+    <div class="section-head">
+        <div>
+            <div class="section-title">আনলক করা ভিডিও</div>
+            <div class="section-subtitle">আপনি যেসব ভিডিও আনলক করেছেন</div>
+        </div>
+        <div class="badge" id="unlockedBadge">0</div>
+    </div>
+
+    <div id="unlockedList" class="video-list"></div>
+</section>
+
+
+<!-- PROFILE -->
+<section id="view-profile" class="page hidden">
+
+    <div class="profile-card">
+
+        <img id="profileAvatar" class="profile-avatar" src="" alt="Profile">
+
+        <div id="profileName" class="profile-name">Guest User</div>
+
+        <div id="profileId" class="profile-id">ID: 00000000</div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <strong id="statVideos">0</strong>
+                <span>মোট ভিডিও</span>
+            </div>
+
+            <div class="stat">
+                <strong id="statUnlocked">0</strong>
+                <span>আনলক হয়েছে</span>
+            </div>
+
+        </div>
+
+        <div id="adminAccess" class="hidden" style="margin-top:18px;">
+            <button class="btn btn-primary" onclick="openAdmin()">
+                ⚙️ Admin Panel
+            </button>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ADMIN -->
+<section id="view-admin" class="page hidden">
+
+    <div class="section-head">
+        <div>
+            <div class="section-title">Admin Dashboard</div>
+            <div class="section-subtitle">ভিডিও ম্যানেজমেন্ট</div>
+        </div>
+    </div>
+
+
+    <div class="admin-card">
+
+        <h3>➕ নতুন ভিডিও যোগ করুন</h3>
+
+        <input id="videoTitle" class="input" placeholder="ভিডিওর নাম">
+
+        <textarea id="videoDesc" class="input" rows="3"
+        placeholder="ভিডিওর সংক্ষিপ্ত বিবরণ"></textarea>
+
+        <input id="videoThumb" class="input"
+        placeholder="Thumbnail Image URL">
+
+        <input id="videoUrl" class="input"
+        placeholder="Video URL">
+
+        <input id="requiredAds" class="input"
+        type="number" min="1" value="1"
+        placeholder="কতটি বিজ্ঞাপন লাগবে?">
+
+        <button class="btn btn-primary" onclick="addVideo()">
+            ভিডিও যোগ করুন
+        </button>
+
+    </div>
+
+
+    <div class="admin-card">
+
+        <h3>📋 ভিডিও ম্যানেজ করুন</h3>
+
+        <div id="adminVideoList"></div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+
+    <button class="nav-item active"
+    onclick="switchTab('home',this)">
+        <span class="nav-icon">⌂</span>
+        <span>সব</span>
+    </button>
+
+    <button class="nav-item"
+    onclick="switchTab('fav',this)">
+        <span class="nav-icon">♡</span>
+        <span>পছন্দ</span>
+    </button>
+
+    <button class="nav-item"
+    onclick="switchTab('unlocked',this)">
+        <span class="nav-icon">🔓</span>
+        <span>আনলক</span>
+    </button>
+
+    <button class="nav-item"
+    onclick="switchTab('profile',this)">
+        <span class="nav-icon">◉</span>
+        <span>প্রোফাইল</span>
+    </button>
+
+</nav>
+
+
+<!-- VIDEO MODAL -->
+<div id="playerModal" class="modal">
+
+    <div class="modal-head">
+
+        <div>
+            <div id="modalTitle" class="modal-title">
+                বিজ্ঞাপন চলছে...
+            </div>
+        </div>
+
+        <button class="close-modal"
+        onclick="closePlayer()">×</button>
+
+    </div>
+
+
+    <div class="player">
+
+        <video
+            id="videoPlayer"
+            playsinline
+            controls>
+        </video>
+
+    </div>
+
+
+    <div class="modal-bottom">
+
+        <div id="timerBox" class="timer">
+
+            <strong id="timer">0</strong>
+
+            <div class="timer-text">
+                বিজ্ঞাপন সম্পূর্ণ দেখুন
+            </div>
+
+        </div>
+
+        <button id="closeButton"
+        class="btn btn-secondary hidden"
+        onclick="closePlayer()">
+            বন্ধ করুন
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+
+<script>
+
+/* =========================================
+   TELEGRAM
+========================================= */
+
+const tg = window.Telegram?.WebApp;
+
+if(tg){
+    tg.ready();
+    tg.expand();
+}
+
+
+/* =========================================
+   CONFIG
+========================================= */
+
+const ADMIN_ID = 6994836801;
+
+
+/* =========================================
+   USER
+========================================= */
+
+const tgUser = tg?.initDataUnsafe?.user;
+
+const currentUser = {
+
+    id: tgUser?.id || 12345678,
+
+    name:
+        tgUser?.first_name
+        ? `${tgUser.first_name}${tgUser.last_name ? " " + tgUser.last_name : ""}`
+        : "Guest User",
+
+    photo:
+        tgUser?.photo_url
+        || "https://ui-avatars.com/api/?name=Guest&background=6d5dfc&color=fff"
+
+};
+
+
+/* =========================================
+   DEFAULT VIDEOS
+========================================= */
+
+let videos = JSON.parse(
+    localStorage.getItem("mini_videos")
+) || [
+
+    {
+        id:1,
+
+        title:"Talking Rabbit Fun",
+
+        desc:"একটি মজার Rabbit ভিডিও দেখুন।",
+
+        thumb:
+        "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=800",
+
+        url:
+        "https://www.w3schools.com/html/mov_bbb.mp4",
+
+        requiredAds:1
+    },
+
+    {
+        id:2,
+
+        title:"Forest Adventure",
+
+        desc:"সবুজ বনের একটি সুন্দর Adventure ভিডিও।",
+
+        thumb:
+        "https://images.unsplash.com/photo-1591010156277-248554b5dfa4?w=800",
+
+        url:
+        "https://www.w3schools.com/html/movie.mp4",
+
+        requiredAds:3
+    }
+
+];
+
+
+/* =========================================
+   USER DATA
+========================================= */
+
+let userData = JSON.parse(
+    localStorage.getItem(
+        "mini_user_" + currentUser.id
+    )
+) || {
+
+    unlocked:{},
+
+    favorites:[]
+
+};
+
+
+/* =========================================
+   ADS
+========================================= */
+
+const ads = [
+
+    {
+        url:
+        "https://www.w3schools.com/html/mov_bbb.mp4",
+
+        duration:10
+    }
+
+];
+
+
+/* =========================================
+   INITIALIZE
+========================================= */
+
+function init(){
+
+    document.getElementById("userName")
+    .innerText = currentUser.name;
+
+    document.getElementById("userId")
+    .innerText = "ID: " + currentUser.id;
+
+    document.getElementById("userAvatar")
+    .src = currentUser.photo;
+
+    document.getElementById("profileAvatar")
+    .src = currentUser.photo;
+
+    document.getElementById("profileName")
+    .innerText = currentUser.name;
+
+    document.getElementById("profileId")
+    .innerText = "ID: " + currentUser.id;
+
+
+    if(Number(currentUser.id) === ADMIN_ID){
+
+        document
+        .getElementById("adminAccess")
+        .classList
+        .remove("hidden");
+
+    }
+
+
+    render();
+
+}
+
+
+/* =========================================
+   SAVE
+========================================= */
+
+function save(){
+
+    localStorage.setItem(
+        "mini_videos",
+        JSON.stringify(videos)
+    );
+
+    localStorage.setItem(
+        "mini_user_" + currentUser.id,
+        JSON.stringify(userData)
+    );
+
+}
+
+
+/* =========================================
+   IS UNLOCKED
+========================================= */
+
+function isUnlocked(video){
+
+    return (
+        (userData.unlocked[video.id] || 0)
+        >= video.requiredAds
+    );
+
+}
+
+
+/* =========================================
+   VIDEO CARD
+========================================= */
+
+function createCard(video){
+
+    const watched =
+        userData.unlocked[video.id] || 0;
+
+    const unlocked =
+        isUnlocked(video);
+
+    const favorite =
+        userData.favorites.includes(video.id);
+
+    const progress =
+        Math.min(
+            100,
+            (watched / video.requiredAds) * 100
+        );
+
+
+    return `
+
+    <div class="video-card">
+
+        <div class="thumb">
+
+            <img
+            src="${escapeHtml(video.thumb)}"
+            alt="Video">
+
+            <button
+            class="favorite"
+            onclick="toggleFavorite(${video.id})">
+
+                ${favorite ? "♥" : "♡"}
+
+            </button>
+
+
+            ${
+                !unlocked
+                ?
+                `
+                <div class="locked-layer">
+
+                    <div class="lock-icon">
+                        🔒
+                    </div>
+
+                    <div class="locked-text">
+                        লক করা আছে
+                    </div>
+
+                </div>
+                `
+                :
+                ""
+            }
+
+        </div>
+
+
+        <div class="video-content">
+
+            <div class="video-title">
+                ${escapeHtml(video.title)}
+            </div>
+
+            <div class="video-desc">
+                ${escapeHtml(video.desc || "")}
+            </div>
+
+
+            ${
+                unlocked
+
+                ?
+
+                `
+
+                <div class="status">
+                    ✓ ভিডিওটি আনলক করা হয়েছে
+                </div>
+
+                <button
+                class="btn btn-success"
+                onclick="playVideo(${video.id})">
+
+                    ▶ ভিডিও দেখুন
+
+                </button>
+
+                `
+
+                :
+
+                `
+
+                <div class="progress-info">
+
+                    <span>
+                        Progress
+                    </span>
+
+                    <span>
+                        ${watched}/${video.requiredAds}
+                    </span>
+
+                </div>
+
+
+                <div class="progress">
+
+                    <div
+                    class="progress-bar"
+                    style="width:${progress}%">
+                    </div>
+
+                </div>
+
+
+                <button
+                class="btn btn-primary"
+                onclick="watchAd(${video.id})">
+
+                    📺 বিজ্ঞাপন দেখুন
+
+                </button>
+
+                `
+
+            }
+
+        </div>
+
+    </div>
+
+    `;
+
+}
+
+
+/* =========================================
+   RENDER
+========================================= */
+
+function render(){
+
+    const videoList =
+        document.getElementById("videoList");
+
+    const favList =
+        document.getElementById("favList");
+
+    const unlockedList =
+        document.getElementById("unlockedList");
+
+    const adminList =
+        document.getElementById("adminVideoList");
+
+
+    videoList.innerHTML = "";
+
+    favList.innerHTML = "";
+
+    unlockedList.innerHTML = "";
+
+    adminList.innerHTML = "";
+
+
+    let unlockedCount = 0;
+
+    let favCount = 0;
+
+
+    videos.forEach(video => {
+
+        const card =
+            createCard(video);
+
+        videoList.innerHTML += card;
+
+
+        if(
+            userData.favorites
+            .includes(video.id)
+        ){
+
+            favList.innerHTML += card;
+
+            favCount++;
+
+        }
+
+
+        if(
+            isUnlocked(video)
+        ){
+
+            unlockedList.innerHTML += card;
+
+            unlockedCount++;
+
+        }
+
+
+        adminList.innerHTML += `
+
+        <div class="admin-video">
+
+            <div>
+
+                <div class="admin-video-title">
+                    ${escapeHtml(video.title)}
+                </div>
+
+                <div class="admin-video-meta">
+                    Required Ads: ${video.requiredAds}
+                </div>
+
+            </div>
+
+            <button
+            class="delete-btn"
+            onclick="deleteVideo(${video.id})">
+
+                Delete
+
+            </button>
+
+        </div>
+
+        `;
+
+    });
+
+
+    document.getElementById(
+        "videoCountBadge"
+    ).innerText =
+        videos.length + " ভিডিও";
+
+
+    document.getElementById(
+        "unlockedBadge"
+    ).innerText =
+        unlockedCount;
+
+
+    document.getElementById(
+        "statVideos"
+    ).innerText =
+        videos.length;
+
+
+    document.getElementById(
+        "statUnlocked"
+    ).innerText =
+        unlockedCount;
+
+
+    if(!favCount){
+
+        favList.innerHTML =
+        emptyState(
+            "♡",
+            "কোনো পছন্দের ভিডিও নেই"
+        );
+
+    }
+
+
+    if(!unlockedCount){
+
+        unlockedList.innerHTML =
+        emptyState(
+            "🔓",
+            "এখনও কোনো ভিডিও আনলক হয়নি"
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   EMPTY
+========================================= */
+
+function emptyState(icon,text){
+
+    return `
+
+    <div class="empty">
+
+        <div class="empty-icon">
+            ${icon}
+        </div>
+
+        <div>
+            ${text}
+        </div>
+
+    </div>
+
+    `;
+
+}
+
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
+function switchTab(view,element){
+
+    document
+    .querySelectorAll("main > section")
+    .forEach(section => {
+
+        section.classList.add("hidden");
+
+    });
+
+
+    document
+    .getElementById("view-" + view)
+    .classList
+    .remove("hidden");
+
+
+    document
+    .querySelectorAll(".nav-item")
+    .forEach(item => {
+
+        item.classList.remove("active");
+
+    });
+
+
+    if(element){
+
+        element.classList.add("active");
+
+    }
+
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+
+}
+
+
+/* =========================================
+   PROFILE
+========================================= */
+
+function openProfile(){
+
+    switchTab(
+        "profile",
+        document.querySelectorAll(".nav-item")[3]
+    );
+
+}
+
+
+/* =========================================
+   FAVORITE
+========================================= */
+
+function toggleFavorite(id){
+
+    const index =
+        userData.favorites
+        .indexOf(id);
+
+
+    if(index >= 0){
+
+        userData.favorites
+        .splice(index,1);
+
+        showToast(
+            "পছন্দ থেকে সরানো হয়েছে"
+        );
+
+    }else{
+
+        userData.favorites
+        .push(id);
+
+        showToast(
+            "পছন্দে যোগ করা হয়েছে"
+        );
+
+    }
+
+
+    save();
+
+    render();
+
+}
+
+
+/* =========================================
+   WATCH AD
+========================================= */
+
+let timerInterval = null;
+
+let currentVideoId = null;
+
+
+function watchAd(videoId){
+
+    currentVideoId =
+        videoId;
+
+
+    const ad =
+        ads[
+            Math.floor(
+                Math.random()
+                * ads.length
+            )
+        ];
+
+
+    const modal =
+        document.getElementById(
+            "playerModal"
+        );
+
+
+    const player =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText =
+        "বিজ্ঞাপন চলছে...";
+
+
+    document.getElementById(
+        "timerBox"
+    ).classList
+    .remove("hidden");
+
+
+    document.getElementById(
+        "closeButton"
+    ).classList
+    .add("hidden");
+
+
+    modal.classList.add("active");
+
+
+    player.controls = false;
+
+    player.src = ad.url;
+
+    player.currentTime = 0;
+
+
+    let seconds =
+        ad.duration;
+
+
+    document.getElementById(
+        "timer"
+    ).innerText =
+        seconds;
+
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    timerInterval =
+    setInterval(() => {
+
+        seconds--;
+
+
+        document.getElementById(
+            "timer"
+        ).innerText =
+            seconds;
+
+
+        if(seconds <= 0){
+
+            clearInterval(
+                timerInterval
+            );
+
+
+            finishAd(
+                currentVideoId
+            );
+
+        }
+
+    },1000);
+
+
+    player.play()
+    .catch(() => {});
+
+
+    player.onpause =
+    function(){
+
+        if(seconds > 0){
+
+            player.play()
+            .catch(() => {});
+
+            showToast(
+                "বিজ্ঞাপন সম্পূর্ণ দেখুন"
+            );
+
+        }
+
+    };
+
+}
+
+
+/* =========================================
+   FINISH AD
+========================================= */
+
+function finishAd(videoId){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    const player =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    player.pause();
+
+
+    if(
+        !userData.unlocked[videoId]
+    ){
+
+        userData.unlocked[videoId] = 0;
+
+    }
+
+
+    userData.unlocked[videoId]++;
+
+
+    save();
+
+
+    const video =
+        videos.find(
+            v => v.id === videoId
+        );
+
+
+    closePlayer();
+
+
+    if(
+        isUnlocked(video)
+    ){
+
+        showToast(
+            "🎉 অভিনন্দন! ভিডিও আনলক হয়েছে"
+        );
+
+    }else{
+
+        const remaining =
+            video.requiredAds
+            -
+            userData.unlocked[videoId];
+
+
+        showToast(
+            "বিজ্ঞাপন দেখা হয়েছে। আরও "
+            + remaining
+            + " টি বিজ্ঞাপন দেখুন"
+        );
+
+    }
+
+
+    render();
+
+}
+
+
+/* =========================================
+   PLAY VIDEO
+========================================= */
+
+function playVideo(videoId){
+
+    const video =
+        videos.find(
+            v => v.id === videoId
+        );
+
+
+    if(!video){
+
+        return;
+
+    }
+
+
+    if(!isUnlocked(video)){
+
+        showToast(
+            "প্রথমে ভিডিওটি আনলক করুন"
+        );
+
+        return;
+
+    }
+
+
+    const modal =
+        document.getElementById(
+            "playerModal"
+        );
+
+
+    const player =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    document.getElementById(
+        "modalTitle"
+    ).innerText =
+        video.title;
+
+
+    document.getElementById(
+        "timerBox"
+    ).classList
+    .add("hidden");
+
+
+    document.getElementById(
+        "closeButton"
+    ).classList
+    .remove("hidden");
+
+
+    modal.classList.add("active");
+
+
+    player.controls = true;
+
+    player.src =
+        video.url;
+
+
+    player.play()
+    .catch(() => {});
+
+}
+
+
+/* =========================================
+   CLOSE PLAYER
+========================================= */
+
+function closePlayer(){
+
+    clearInterval(
+        timerInterval
+    );
+
+
+    const player =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    player.pause();
+
+    player.src = "";
+
+
+    document.getElementById(
+        "playerModal"
+    ).classList
+    .remove("active");
+
+
+    currentVideoId =
+        null;
+
+}
+
+
+/* =========================================
+   ADMIN
+========================================= */
+
+function openAdmin(){
+
+    if(
+        Number(currentUser.id)
+        !== ADMIN_ID
+    ){
+
+        showToast(
+            "Admin Access Denied"
+        );
+
+        return;
+
+    }
+
+
+    switchTab(
+        "admin",
+        null
+    );
+
+}
+
+
+/* =========================================
+   ADD VIDEO
+========================================= */
+
+function addVideo(){
+
+    if(
+        Number(currentUser.id)
+        !== ADMIN_ID
+    ){
+
+        showToast(
+            "আপনার Admin Access নেই"
+        );
+
+        return;
+
+    }
+
+
+    const title =
+        document.getElementById(
+            "videoTitle"
+        ).value.trim();
+
+
+    const desc =
+        document.getElementById(
+            "videoDesc"
+        ).value.trim();
+
+
+    const thumb =
+        document.getElementById(
+            "videoThumb"
+        ).value.trim();
+
+
+    const url =
+        document.getElementById(
+            "videoUrl"
+        ).value.trim();
+
+
+    const requiredAds =
+        parseInt(
+            document.getElementById(
+                "requiredAds"
+            ).value
+        );
+
+
+    if(
+        !title ||
+        !url ||
+        !requiredAds
+    ){
+
+        showToast(
+            "Title, Video URL এবং Required Ads দিন"
+        );
+
+        return;
+
+    }
+
+
+    videos.push({
+
+        id:
+            Date.now(),
+
+        title,
+
+        desc:
+            desc || "নতুন ভিডিও",
+
+        thumb:
+            thumb ||
+            "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800",
+
+        url,
+
+        requiredAds:
+            Math.max(
+                1,
+                requiredAds
+            )
+
+    });
+
+
+    save();
+
+    render();
+
+
+    document.getElementById(
+        "videoTitle"
+    ).value = "";
+
+
+    document.getElementById(
+        "videoDesc"
+    ).value = "";
+
+
+    document.getElementById(
+        "videoThumb"
+    ).value = "";
+
+
+    document.getElementById(
+        "videoUrl"
+    ).value = "";
+
+
+    document.getElementById(
+        "requiredAds"
+    ).value = 1;
+
+
+    showToast(
+        "✓ ভিডিও সফলভাবে যোগ হয়েছে"
+    );
+
+}
+
+
+/* =========================================
+   DELETE VIDEO
+========================================= */
+
+function deleteVideo(id){
+
+    if(
+        Number(currentUser.id)
+        !== ADMIN_ID
+    ){
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "এই ভিডিওটি Delete করতে চান?"
+        );
+
+
+    if(!confirmed){
+
+        return;
+
+    }
+
+
+    videos =
+        videos.filter(
+            v => v.id !== id
+        );
+
+
+    save();
+
+    render();
+
+
+    showToast(
+        "ভিডিও Delete করা হয়েছে"
+    );
+
+}
+
+
+/* =========================================
+   TOAST
+========================================= */
+
+let toastTimer;
+
+
+function showToast(message){
+
+    const toast =
+        document.getElementById(
+            "toast"
+        );
+
+
+    toast.innerText =
+        message;
+
+
+    toast.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
+
+
+    toastTimer =
+    setTimeout(() => {
+
+        toast.classList.remove(
+            "show"
+        );
+
+    },2500);
+
+}
+
+
+/* =========================================
+   SECURITY HELPER
+========================================= */
+
+function escapeHtml(value){
+
+    return String(value || "")
+    .replace(
+        /[&<>"']/g,
+        char => ({
+
+            "&":"&amp;",
+            "<":"&lt;",
+            ">":"&gt;",
+            '"':"&quot;",
+            "'":"&#039;"
+
+        }[char])
+    );
+
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+init();
+
+</script>
+
+</body>
+  </html>
